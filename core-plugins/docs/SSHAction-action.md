@@ -28,8 +28,7 @@ Properties
 **command:** The command to be executed on the remote host. This includes the filepath of the script and any arguments
 needing to be passed.
 
-**output:** Script output variable used as the key in the instance the output from a script needs to be saved
-and passed through the Action Context.
+**output:** The key name to store any important output from the script run through the workflow token.
 
 Example
 -------
