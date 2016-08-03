@@ -25,14 +25,17 @@ import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -54,11 +57,12 @@ public class HDFSAction extends Action {
 
   @Override
   public void run(ActionContext context) throws Exception {
-    FileSystem hdfs = new Path(config.sourcePath).getFileSystem(new Configuration());
+    Path source = new Path(config.sourcePath);
+    Path dest = new Path(config.destPath);
+    FileSystem hdfs = source.getFileSystem(new Configuration());
 
-    if (new File(config.sourcePath).isFile()) {//moving single file
-      Path source = new Path(config.sourcePath);
-      Path dest = new Path(config.destPath);
+    if (hdfs.getFileStatus(source).isFile()) {//moving single file
+
       try {
         hdfs.rename(source, dest);
       } catch (IOException e) {
@@ -68,20 +72,28 @@ public class HDFSAction extends Action {
     }
 
     //moving contents of directory
-    File folder = new File(config.sourcePath);
-    File[] listFiles;
+
+    FileStatus[] listFiles;
     if (config.fileRegex != null) {
-      FileFilter filter = new WildcardFileFilter(config.fileRegex);
-      listFiles = folder.listFiles(filter);
+      PathFilter filter = new PathFilter() {
+        private final Pattern pattern = Pattern.compile(config.fileRegex);
+
+        @Override
+        public boolean accept(Path path)
+        {
+          return pattern.matcher(path.getName()).matches();
+        }
+      };
+
+      listFiles = hdfs.listStatus(source, filter);
     } else {
-      listFiles = folder.listFiles();
+      listFiles = hdfs.listStatus(source);
     }
 
     for (int i = 0; i < listFiles.length; i++) {
-      Path source = new Path(listFiles[i].getAbsolutePath());
-      Path dest;
+      source = listFiles[i].getPath();
       //Moving directory, so destination filePath doesn't have filename
-      dest = new Path(config.destPath + listFiles[i].getName());
+      dest = new Path(config.destPath);
 
       try {
         hdfs.rename(source, dest);
