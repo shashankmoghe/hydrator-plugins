@@ -17,6 +17,8 @@
 package co.cask.hydrator.plugin.batch.action;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.action.Action;
@@ -36,11 +38,15 @@ import javax.annotation.Nullable;
 /**
  * Move file(s) within HDFS.
  * A user must specify file/directory path and destination file/directory path
+ * Optionals include fileRegex
  */
+@Plugin(type = Action.PLUGIN_TYPE)
+@Name("HDFSAction")
+@Description("Action to move files within HDFS")
 public class HDFSAction extends Action {
-  private HDFSActionConfig config;
-
   private static final Logger LOG = LoggerFactory.getLogger(HDFSAction.class);
+
+  private HDFSActionConfig config;
 
   public HDFSAction(HDFSActionConfig config) {
     this.config = config;
@@ -48,7 +54,20 @@ public class HDFSAction extends Action {
 
   @Override
   public void run(ActionContext context) throws Exception {
-    //determine how many times we have to run this
+    FileSystem hdfs = new Path(config.sourcePath).getFileSystem(new Configuration());
+
+    if (new File(config.sourcePath).isFile()) {//moving single file
+      Path source = new Path(config.sourcePath);
+      Path dest = new Path(config.destPath);
+      try {
+        hdfs.rename(source, dest);
+      } catch (IOException e) {
+        LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e);
+      }
+      return;
+    }
+
+    //moving contents of directory
     File folder = new File(config.sourcePath);
     File[] listFiles;
     if (config.fileRegex != null) {
@@ -58,25 +77,18 @@ public class HDFSAction extends Action {
       listFiles = folder.listFiles();
     }
 
-
-    FileSystem hdfs = new Path(config.sourcePath).getFileSystem(new Configuration());
     for (int i = 0; i < listFiles.length; i++) {
       Path source = new Path(listFiles[i].getAbsolutePath());
       Path dest;
-      if (config.fileRegex != null) {
-        //Moving directory, so destination filePath doesn't have filename
-        dest = new Path(config.destPath + listFiles[i].getName());
-      } else {
-        dest = new Path(config.destPath);
-      }
+      //Moving directory, so destination filePath doesn't have filename
+      dest = new Path(config.destPath + listFiles[i].getName());
 
       try {
         hdfs.rename(source, dest);
       } catch (IOException e) {
-        LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e.getMessage());
+        LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e);
       }
     }
-
   }
 
   @Override
@@ -88,10 +100,10 @@ public class HDFSAction extends Action {
    * Config class that contains all properties necessary to execute an HDFS move command.
    */
   public class HDFSActionConfig extends PluginConfig {
-    @Description("Path of file/directory")
+    @Description("Full HDFS path of file/directory")
     private String sourcePath;
 
-    @Description("Path of desired destination path")
+    @Description("Full HDFS path of desired destination path")
     private String destPath;
 
     @Nullable
