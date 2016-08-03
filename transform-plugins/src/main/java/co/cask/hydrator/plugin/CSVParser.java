@@ -114,16 +114,13 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
           "Field " + config.field + " is not present in the input schema");
       } else {
         if (!inputSchemaField.getSchema().getType().equals(Schema.Type.STRING) &&
-          !isNullableString(inputSchemaField.getSchema())) {
+            !(inputSchemaField.getSchema().isNullable() &&
+              inputSchemaField.getSchema().getNonNullable().getType().equals(Schema.Type.STRING))) {
           throw new IllegalArgumentException(
             "Type for field  " + config.field + " must be String");
         }
       }
     }
-  }
-
-  private boolean isNullableString(Schema schema) {
-    return schema.isNullable() && schema.getNonNullable().getType().equals(Schema.Type.STRING);
   }
 
   Schema parseAndValidateOutputSchema(Schema inputSchema) {
