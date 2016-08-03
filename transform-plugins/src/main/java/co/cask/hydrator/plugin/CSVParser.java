@@ -146,16 +146,22 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     if (!schema.getType().equals(Schema.Type.UNION)) {
       return false;
     }
+
     List<Schema> unionSchemas = schema.getUnionSchemas();
     if (unionSchemas.size() > 2) {  // should only be STRING and NULL
       return false;
     }
+
+    int stringSchemas = 0;
+    int nullSchemas = 0;
     for (Schema unionSchema : unionSchemas) {
-      if (!unionSchema.getType().equals(Schema.Type.NULL) && !unionSchema.getType().equals(Schema.Type.STRING)) {
-        return false;
+      if (unionSchema.getType().equals(Schema.Type.STRING)) {
+        stringSchemas++;
+      } else if (unionSchema.getType().equals(Schema.Type.NULL)) {
+        nullSchemas++;
       }
     }
-    return true;
+    return stringSchemas == 1 && nullSchemas == 1;
   }
 
   @Override
