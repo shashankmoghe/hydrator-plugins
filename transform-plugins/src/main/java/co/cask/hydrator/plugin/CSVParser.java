@@ -108,7 +108,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         throw new IllegalArgumentException(
           "Field " + config.field + " is not present in the input schema");
       } else {
-        if (!inputSchemaField.getSchema().getType().equals(Schema.Type.STRING)) {
+        if (!inputSchemaField.getSchema().getType().equals(Schema.Type.STRING) &&
+          !isNullableString(inputSchemaField.getSchema())) {
           throw new IllegalArgumentException(
             "Type for field  " + config.field + " must be String");
         }
@@ -139,6 +140,22 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
+  }
+
+  private boolean isNullableString(Schema schema) {
+    if (!schema.getType().equals(Schema.Type.UNION)) {
+      return false;
+    }
+    List<Schema> unionSchemas = schema.getUnionSchemas();
+    if (unionSchemas.size() > 2) {  // should only be STRING and NULL
+      return false;
+    }
+    for (Schema unionSchema : unionSchemas) {
+      if (!unionSchema.getType().equals(Schema.Type.NULL) && !unionSchema.getType().equals(Schema.Type.STRING)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
@@ -188,6 +205,11 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
     // Field has to string to be parsed correctly. For others throw an exception.
     String body = in.get(config.field);
+
+    // Handles case where nullable input field was null
+    if (body == null) {
+      return;
+    }
 
     // Parse the text as CSV and emit it as structured record.
     try {
