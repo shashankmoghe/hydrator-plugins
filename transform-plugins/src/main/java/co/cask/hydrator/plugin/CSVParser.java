@@ -102,6 +102,11 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     }
 
     Schema inputSchema = configurer.getStageConfigurer().getInputSchema();
+    validateInputSchema(inputSchema);
+    configurer.getStageConfigurer().setOutputSchema(parseAndValidateOutputSchema(inputSchema));
+  }
+
+  void validateInputSchema(Schema inputSchema) {
     if (inputSchema != null) {
       Schema.Field inputSchemaField = inputSchema.getField(config.field);
       if (inputSchemaField == null) {
@@ -115,12 +120,16 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         }
       }
     }
+  }
 
+  private boolean isNullableString(Schema schema) {
+    return schema.isNullable() && schema.getNonNullable().getType().equals(Schema.Type.STRING);
+  }
 
+  Schema parseAndValidateOutputSchema(Schema inputSchema) {
     // Check if schema specified is a valid schema or no.
     try {
       Schema outputSchema = Schema.parseJson(this.config.schema);
-      configurer.getStageConfigurer().setOutputSchema(outputSchema);
 
       // When a input field is passed through to output, the type and name should be the same.
       // If the type is not the same, then we fail.
@@ -137,31 +146,11 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
           }
         }
       }
+
+      return outputSchema;
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
-  }
-
-  private boolean isNullableString(Schema schema) {
-    if (!schema.getType().equals(Schema.Type.UNION)) {
-      return false;
-    }
-
-    List<Schema> unionSchemas = schema.getUnionSchemas();
-    if (unionSchemas.size() > 2) {  // should only be STRING and NULL
-      return false;
-    }
-
-    int stringSchemas = 0;
-    int nullSchemas = 0;
-    for (Schema unionSchema : unionSchemas) {
-      if (unionSchema.getType().equals(Schema.Type.STRING)) {
-        stringSchemas++;
-      } else if (unionSchema.getType().equals(Schema.Type.NULL)) {
-        nullSchemas++;
-      }
-    }
-    return stringSchemas == 1 && nullSchemas == 1;
   }
 
   @Override
@@ -275,7 +264,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     private final String format;
 
     @Name("field")
-    @Description("Specify the field that should be used for parsing into CSV.")
+    @Description("Specify the field that should be used for parsing into CSV. Input records with a null field are " +
+     "filtered from output.")
     private final String field;
 
     @Name("schema")
