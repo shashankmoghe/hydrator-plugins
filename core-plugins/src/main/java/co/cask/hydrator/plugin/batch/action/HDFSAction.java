@@ -23,7 +23,6 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -57,12 +56,12 @@ public class HDFSAction extends Action {
   public void run(ActionContext context) throws Exception {
     Path source = new Path(config.sourcePath);
     Path dest = new Path(config.destPath);
-    FileSystem hdfs = source.getFileSystem(new Configuration());
+    FileSystem fileSystem = source.getFileSystem(new Configuration());
 
-    if (hdfs.getFileStatus(source).isFile()) {//moving single file
+    if (fileSystem.getFileStatus(source).isFile()) {//moving single file
 
       try {
-        hdfs.rename(source, dest);
+        fileSystem.rename(source, dest);
       } catch (IOException e) {
         LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e);
       }
@@ -83,18 +82,18 @@ public class HDFSAction extends Action {
         }
       };
 
-      listFiles = hdfs.listStatus(source, filter);
+      listFiles = fileSystem.listStatus(source, filter);
     } else {
-      listFiles = hdfs.listStatus(source);
+      listFiles = fileSystem.listStatus(source);
     }
 
-    for (int i = 0; i < listFiles.length; i++) {
-      source = listFiles[i].getPath();
+    for (FileStatus file: listFiles) {
+      source = file.getPath();
       //Moving directory, so destination filePath doesn't have filename
       dest = new Path(config.destPath);
 
       try {
-        hdfs.rename(source, dest);
+        fileSystem.rename(source, dest);
       } catch (IOException e) {
         LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e);
       }
