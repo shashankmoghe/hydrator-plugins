@@ -32,8 +32,6 @@ import org.apache.hadoop.fs.PathFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
