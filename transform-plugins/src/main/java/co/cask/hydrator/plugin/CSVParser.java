@@ -143,7 +143,6 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
           }
         }
       }
-
       return outputSchema;
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
@@ -197,15 +196,12 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
     // Field has to string to be parsed correctly. For others throw an exception.
     String body = in.get(config.field);
-
-    // Handles case where nullable input field was null
-    if (body == null) {
-      return;
-    }
+    boolean nulledInput = body == null;
 
     // Parse the text as CSV and emit it as structured record.
     try {
-      org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
+      org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(nulledInput ? "" : body,
+                                                                                       csvFormat);
       List<CSVRecord> records = parser.getRecords();
       for (CSVRecord record : records) {
         emitter.emit(createStructuredRecord(record, in));
