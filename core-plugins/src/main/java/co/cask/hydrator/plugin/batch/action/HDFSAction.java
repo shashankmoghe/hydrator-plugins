@@ -58,7 +58,7 @@ public class HDFSAction extends Action {
     Path dest = new Path(config.destPath);
     FileSystem fileSystem = source.getFileSystem(new Configuration());
 
-    if (fileSystem.getFileStatus(source).isFile()) {//moving single file
+    if (fileSystem.getFileStatus(source).isFile()) { //moving single file
 
       try {
         fileSystem.rename(source, dest);
@@ -76,8 +76,7 @@ public class HDFSAction extends Action {
         private final Pattern pattern = Pattern.compile(config.fileRegex);
 
         @Override
-        public boolean accept(Path path)
-        {
+        public boolean accept(Path path) {
           return pattern.matcher(path.getName()).matches();
         }
       };
