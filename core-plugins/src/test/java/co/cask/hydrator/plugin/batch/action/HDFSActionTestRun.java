@@ -39,8 +39,6 @@ import java.util.concurrent.TimeUnit;
  * Test for {@link HDFSAction}
  */
 public class HDFSActionTestRun extends ETLBatchTestBase {
-  private final String sourcePath = "/some/Source/Path";
-  private final String destPath = "/some/dest/Path";
 
   @Test
   public void testHDFSAction() throws Exception {
@@ -54,7 +52,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       "HDFSAction",
       new ETLPlugin("HDFSAction", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", "testFiles/source",
-                                    "destPath", "testFiles/",
+                                    "destPath", "testFiles",
                                     "fileRegex", ".*\\.txt"),
                     null));
     ETLStage source = new ETLStage("source",
