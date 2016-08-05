@@ -69,7 +69,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "sshActionTest");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start(ImmutableMap.of("logical.start.time", "0"));
