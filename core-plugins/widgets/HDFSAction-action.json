@@ -21,15 +21,17 @@
           "label": "Wildcard",
           "name": "fileRegex"
         },
-        "widget-type": "select",
-        "label": "Stop Pipeline Upon Error",
-        "name": "continueOnError",
-        "widget-attributes": {
-          "values": [
-            "true",
-            "false"
-          ],
-          "default": "false"
+        {
+          "widget-type": "select",
+          "label": "Stop Pipeline Upon Error",
+          "name": "continueOnError",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
         }
       ]
     }

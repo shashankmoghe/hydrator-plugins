@@ -83,18 +83,17 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start(ImmutableMap.of("logical.start.time", "0"));
     manager.waitForFinish(3, TimeUnit.MINUTES);
 
     List<RunRecord> history = appManager.getHistory(new Id.Program(appId, ProgramType.WORKFLOW, SmartWorkflow.NAME),
                                                     ProgramRunStatus.FAILED);
-    Assert.assertTrue(history.size() == 1); //make sure pipeline didn't fail
+    Assert.assertTrue(history.size() == 1);
 
     Map<String, WorkflowNodeStateDetail> nodesInFailedProgram =
       manager.getWorkflowNodeStates(history.get(0).getPid());
     Assert.assertTrue(nodesInFailedProgram.size() == 1);
 
-    //check that SSHAction node failed
+    //check that HDFSAction node failed
     Assert.assertTrue(nodesInFailedProgram.values().iterator().next().getNodeStatus().equals(NodeStatus.FAILED));
 
     folder.delete();

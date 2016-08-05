@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
- * Move file(s) within HDFS.
+ * Action that moves file(s) within HDFS in the same cluster.
  * A user must specify file/directory path and destination file/directory path
  * Optionals include fileRegex
  */
@@ -62,12 +62,17 @@ public class HDFSAction extends Action {
     if (fileSystem.getFileStatus(source).isFile()) { //moving single file
 
       try {
-        fileSystem.rename(source, dest);
+        if (!fileSystem.rename(source, dest)) {
+          if (!config.continueOnError) {
+            throw new IOException(String.format("Failed to rename file {} to {}", source.toString(), dest.toString()));
+          }
+          LOG.error("Failed to move file {} to {}", source.toString(), dest.toString());
+        }
       } catch (IOException e) {
         if (!config.continueOnError) {
-          e.printStackTrace();
+          throw e;
         }
-        LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e);
+        LOG.error("Failed to move file {} to {}", source.toString(), dest.toString(), e);
       }
       return;
     }
@@ -95,12 +100,17 @@ public class HDFSAction extends Action {
       dest = new Path(config.destPath);
 
       try {
-        fileSystem.rename(source, dest);
+        if (!fileSystem.rename(source, dest)) {
+          if (!config.continueOnError) {
+            throw new IOException(String.format("Failed to rename file {} to {}", source.toString(), dest.toString()));
+          }
+          LOG.error("Failed to move file {} to {}", source.toString(), dest.toString());
+        }
       } catch (IOException e) {
         if (!config.continueOnError) {
-          e.printStackTrace();
+          throw e;
         }
-        LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e);
+        LOG.error("Failed to move file {} to {}", source.toString(), dest.toString(), e);
       }
     }
   }
@@ -114,23 +124,26 @@ public class HDFSAction extends Action {
    * Config class that contains all properties necessary to execute an HDFS move command.
    */
   public class HDFSActionConfig extends PluginConfig {
-    @Description("Full HDFS path of file/directory")
+    @Description("Full HDFS path of file/directory. In the case of a directory, if fileRegex is set, " +
+      "then all files in the directory matching the wildcard regex will be moved. Otherwise, all files in the " +
+      "directory will be moved. Ex: hdfs://hostname/tmp")
     private String sourcePath;
 
-    @Description("Full HDFS path of desired destination path")
+    @Description("The full HDFS destination path in the same cluster where user wants to move the file(s) in " +
+      "sourcePath. It is assumed that the path is valid. For moving a file, this means that the parent directories " +
+      "exist. For moving multiple files in a directory or an entire directory, the path to the desired directory " +
+      "location should be passed and that directory and all parent directories should already exist.")
     private String destPath;
 
+    @Description("Wildcard regex to filter type of files in the directory to move")
     @Nullable
     private String fileRegex;
 
+    @Description("Whether or not the Pipeline should stop if the file move process fails")
     private boolean continueOnError;
 
-    HDFSActionConfig() {
-      continueOnError = false;
-    }
-
     @VisibleForTesting
-    HDFSActionConfig(String sourcePath, String destPath, String fileRegex, Boolean continueOnError) {
+    HDFSActionConfig(String sourcePath, String destPath, String fileRegex, boolean continueOnError) {
       this.sourcePath = sourcePath;
       this.destPath = destPath;
       this.fileRegex = fileRegex;
