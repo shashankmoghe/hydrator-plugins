@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
+import co.cask.cdap.api.workflow.NodeStatus;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.batch.BatchSink;
@@ -24,36 +25,46 @@ import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.ProgramRunStatus;
+import co.cask.cdap.proto.ProgramType;
+import co.cask.cdap.proto.RunRecord;
+import co.cask.cdap.proto.WorkflowNodeStateDetail;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Test for {@link HDFSAction}
  */
 public class HDFSActionTestRun extends ETLBatchTestBase {
+  @ClassRule
+  public static TemporaryFolder folder = new TemporaryFolder();
 
   @Test
-  public void testHDFSAction() throws Exception {
-    File file = new File("testFiles/source/test.txt");
-    file.getParentFile().mkdirs();
-    file.createNewFile();
-    File jsonFile = new File("testFiles/source/test.json");
-    jsonFile.createNewFile();
+  public void testFailedHDFSAction() throws Exception {
+
+    folder.newFolder("source");
+    folder.newFile("source/test.txt");
+    folder.newFile("source/test.json");
 
     ETLStage action = new ETLStage(
       "HDFSAction",
       new ETLPlugin("HDFSAction", Action.PLUGIN_TYPE,
-                    ImmutableMap.of("sourcePath", "testFiles/source",
-                                    "destPath", "testFiles",
-                                    "fileRegex", ".*\\.txt"),
+                    ImmutableMap.of("sourcePath", folder.getRoot() + "/source/random",
+                                    "destPath", folder.getRoot() + "/",
+                                    "fileRegex", ".*\\.txt",
+                                    "continueOnError", "false"),
                     null));
     ETLStage source = new ETLStage("source",
                                    new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
@@ -75,30 +86,59 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     manager.start(ImmutableMap.of("logical.start.time", "0"));
     manager.waitForFinish(3, TimeUnit.MINUTES);
 
-    File textDestFile = new File("testFiles/test.txt");
-    Assert.assertTrue(textDestFile.exists());
-    File jsonDestFile = new File("testFiles/test.json");
-    Assert.assertFalse(jsonDestFile.exists());
+    List<RunRecord> history = appManager.getHistory(new Id.Program(appId, ProgramType.WORKFLOW, SmartWorkflow.NAME),
+                                                    ProgramRunStatus.FAILED);
+    Assert.assertTrue(history.size() == 1); //make sure pipeline didn't fail
 
+    Map<String, WorkflowNodeStateDetail> nodesInFailedProgram =
+      manager.getWorkflowNodeStates(history.get(0).getPid());
+    Assert.assertTrue(nodesInFailedProgram.size() == 1);
 
-    File dir = new File("testFiles");
-    deleteDirectory(dir);
+    //check that SSHAction node failed
+    Assert.assertTrue(nodesInFailedProgram.values().iterator().next().getNodeStatus().equals(NodeStatus.FAILED));
 
+    folder.delete();
   }
 
-  public static boolean deleteDirectory(File directory) {
-    if (directory.exists()) {
-      File[] files = directory.listFiles();
-      if (null != files) {
-        for (int i = 0; i < files.length; i++) {
-          if (files[i].isDirectory()) {
-            deleteDirectory(files[i]);
-          } else {
-            files[i].delete();
-          }
-        }
-      }
-    }
-    return directory.delete();
+  @Test
+  public void testHDFSAction() throws Exception {
+    folder.newFolder("source");
+    folder.newFile("source/test.txt");
+    folder.newFile("source/test.json");
+
+    ETLStage action = new ETLStage(
+      "HDFSAction",
+      new ETLPlugin("HDFSAction", Action.PLUGIN_TYPE,
+                    ImmutableMap.of("sourcePath", folder.getRoot() + "/source",
+                                    "destPath", folder.getRoot() + "/",
+                                    "fileRegex", ".*\\.txt",
+                                    "continueOnError", "false"),
+                    null));
+    ETLStage source = new ETLStage("source",
+                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
+                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
+    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
+                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addStage(action)
+      .addConnection(action.getName(), source.getName())
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsActionTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    manager.start(ImmutableMap.of("logical.start.time", "0"));
+    manager.waitForFinish(3, TimeUnit.MINUTES);
+
+    File textDestFile = new File(folder.getRoot().getPath() + "/test.txt");
+    Assert.assertTrue(textDestFile.exists());
+    File jsonDestFile = new File(folder.getRoot().getPath() + "/test.json");
+    Assert.assertFalse(jsonDestFile.exists());
+
+    folder.delete();
   }
 }

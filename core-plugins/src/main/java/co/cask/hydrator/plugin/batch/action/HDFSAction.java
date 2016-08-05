@@ -23,6 +23,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -63,13 +64,15 @@ public class HDFSAction extends Action {
       try {
         fileSystem.rename(source, dest);
       } catch (IOException e) {
+        if (!config.continueOnError) {
+          e.printStackTrace();
+        }
         LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e);
       }
       return;
     }
 
     //moving contents of directory
-
     FileStatus[] listFiles;
     if (config.fileRegex != null) {
       PathFilter filter = new PathFilter() {
@@ -94,6 +97,9 @@ public class HDFSAction extends Action {
       try {
         fileSystem.rename(source, dest);
       } catch (IOException e) {
+        if (!config.continueOnError) {
+          e.printStackTrace();
+        }
         LOG.error("Failed to move file {} to {} for reason: {}", source.toString(), dest.toString(), e);
       }
     }
@@ -117,10 +123,18 @@ public class HDFSAction extends Action {
     @Nullable
     private String fileRegex;
 
-    HDFSActionConfig(String sourcePath, String destPath, String fileRegex) {
+    private boolean continueOnError;
+
+    HDFSActionConfig() {
+      continueOnError = false;
+    }
+
+    @VisibleForTesting
+    HDFSActionConfig(String sourcePath, String destPath, String fileRegex, Boolean continueOnError) {
       this.sourcePath = sourcePath;
       this.destPath = destPath;
       this.fileRegex = fileRegex;
+      this.continueOnError = continueOnError;
     }
   }
 }

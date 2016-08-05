@@ -20,6 +20,8 @@ Properties
 
 **fileRegex:** The wildcard regex to filter what kind of files in the directory to move.
 
+**continueOnError:** Indicates whether or not the pipeline should stop if the file move process encounters an error.
+
 
 Example
 -------
@@ -39,7 +41,8 @@ This example moves a file from /source/path to /dest/path:
           "properties": {
               "sourcePath": "hdfs://123.23.12.4344:10000/source/path",
               "destPath": "hdfs://123.23.12.4344:10000/dest/path",
-              "fileRegex": ".*\.txt"
+              "fileRegex": ".*\.txt",
+              "continueOnError": "false"
             }
           }
     }
