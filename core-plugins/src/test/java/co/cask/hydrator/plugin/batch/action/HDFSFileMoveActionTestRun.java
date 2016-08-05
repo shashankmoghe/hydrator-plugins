@@ -45,9 +45,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Test for {@link HDFSAction}
+ * Test for {@link HDFSFileMoveAction}
  */
-public class HDFSActionTestRun extends ETLBatchTestBase {
+public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
   @ClassRule
   public static TemporaryFolder folder = new TemporaryFolder();
 
@@ -59,8 +59,8 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     folder.newFile("source/test.json");
 
     ETLStage action = new ETLStage(
-      "HDFSAction",
-      new ETLPlugin("HDFSAction", Action.PLUGIN_TYPE,
+      "HDFSFileMoveAction",
+      new ETLPlugin("HDFSFileMoveAction", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", folder.getRoot() + "/source/random",
                                     "destPath", folder.getRoot() + "/",
                                     "fileRegex", ".*\\.txt",
@@ -93,7 +93,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       manager.getWorkflowNodeStates(history.get(0).getPid());
     Assert.assertTrue(nodesInFailedProgram.size() == 1);
 
-    //check that HDFSAction node failed
+    //check that HDFSFileMoveAction node failed
     Assert.assertTrue(nodesInFailedProgram.values().iterator().next().getNodeStatus().equals(NodeStatus.FAILED));
 
     folder.delete();
@@ -106,8 +106,8 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     folder.newFile("source/test.json");
 
     ETLStage action = new ETLStage(
-      "HDFSAction",
-      new ETLPlugin("HDFSAction", Action.PLUGIN_TYPE,
+      "HDFSFileMoveAction",
+      new ETLPlugin("HDFSFileMoveAction", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", folder.getRoot() + "/source",
                                     "destPath", folder.getRoot() + "/",
                                     "fileRegex", ".*\\.txt",
