@@ -1,0 +1,1 @@
+delete from "actionTest" where day = '${logicalStartTime(yyyy-MM-dd,0m,UTC)}'
