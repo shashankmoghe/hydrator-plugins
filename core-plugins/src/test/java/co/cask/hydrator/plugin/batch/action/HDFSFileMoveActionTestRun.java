@@ -34,7 +34,12 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import com.google.common.collect.ImmutableMap;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -51,65 +56,44 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
   @ClassRule
   public static TemporaryFolder folder = new TemporaryFolder();
 
-  @Test
-  public void testFailedHDFSAction() throws Exception {
+  private MiniDFSCluster dfsCluster;
+  private FileSystem fileSystem;
 
-    folder.newFolder("source");
-    folder.newFile("source/test.txt");
-    folder.newFile("source/test.json");
+  @Before
+  public void beforeTest() throws Exception {
+    // Setup MiniDFSCluster
+    File baseDir = folder.newFolder();
+    org.apache.hadoop.conf.Configuration conf = new org.apache.hadoop.conf.Configuration();
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, baseDir.getAbsolutePath());
+    MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
+    dfsCluster = builder.build();
+    dfsCluster.waitActive();
+    fileSystem = FileSystem.get(conf);
+  }
 
-    ETLStage action = new ETLStage(
-      "HDFSFileMoveAction",
-      new ETLPlugin("HDFSFileMoveAction", Action.PLUGIN_TYPE,
-                    ImmutableMap.of("sourcePath", folder.getRoot() + "/source/random",
-                                    "destPath", folder.getRoot() + "/",
-                                    "fileRegex", ".*\\.txt",
-                                    "continueOnError", "false"),
-                    null));
-    ETLStage source = new ETLStage("source",
-                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
-                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
-      .addStage(action)
-      .addConnection(action.getName(), source.getName())
-      .addConnection(source.getName(), sink.getName())
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsActionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.waitForFinish(3, TimeUnit.MINUTES);
-
-    List<RunRecord> history = appManager.getHistory(new Id.Program(appId, ProgramType.WORKFLOW, SmartWorkflow.NAME),
-                                                    ProgramRunStatus.FAILED);
-    Assert.assertTrue(history.size() == 1);
-
-    Map<String, WorkflowNodeStateDetail> nodesInFailedProgram =
-      manager.getWorkflowNodeStates(history.get(0).getPid());
-    Assert.assertTrue(nodesInFailedProgram.size() == 1);
-
-    //check that HDFSFileMoveAction node failed
-    Assert.assertTrue(nodesInFailedProgram.values().iterator().next().getNodeStatus().equals(NodeStatus.FAILED));
-
+  @After
+  public void afterTest() throws Exception {
+    // Shutdown MiniDFSCluster
+    if (dfsCluster != null) {
+      dfsCluster.shutdown();
+    }
     folder.delete();
   }
 
   @Test
-  public void testHDFSAction() throws Exception {
-    folder.newFolder("source");
-    folder.newFile("source/test.txt");
-    folder.newFile("source/test.json");
+  public void testFailedHDFSAction() throws Exception {
+
+    Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
+
+    fileSystem.mkdirs(new Path("source"));
+    fileSystem.createNewFile(new Path("source/test.txt"));
+    fileSystem.createNewFile(new Path("source/test.json"));
 
     ETLStage action = new ETLStage(
       "HDFSFileMoveAction",
       new ETLPlugin("HDFSFileMoveAction", Action.PLUGIN_TYPE,
-                    ImmutableMap.of("sourcePath", folder.getRoot() + "/source",
-                                    "destPath", folder.getRoot() + "/",
+                    ImmutableMap.of("sourcePath", outputDir.toUri().toString() + "/test",
+                                    "destPath", outputDir.toUri().toString() + "/",
                                     "fileRegex", ".*\\.txt",
                                     "continueOnError", "false"),
                     null));
@@ -133,11 +117,56 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     manager.start(ImmutableMap.of("logical.start.time", "0"));
     manager.waitForFinish(3, TimeUnit.MINUTES);
 
-    File textDestFile = new File(folder.getRoot().getPath() + "/test.txt");
-    Assert.assertTrue(textDestFile.exists());
-    File jsonDestFile = new File(folder.getRoot().getPath() + "/test.json");
-    Assert.assertFalse(jsonDestFile.exists());
+    List<RunRecord> history = appManager.getHistory(new Id.Program(appId, ProgramType.WORKFLOW, SmartWorkflow.NAME),
+                                                    ProgramRunStatus.FAILED);
+    Assert.assertTrue(history.size() == 1);
 
-    folder.delete();
+    Map<String, WorkflowNodeStateDetail> nodesInFailedProgram =
+      manager.getWorkflowNodeStates(history.get(0).getPid());
+    Assert.assertTrue(nodesInFailedProgram.size() == 1);
+
+    //check that HDFSFileMoveAction node failed
+    Assert.assertTrue(nodesInFailedProgram.values().iterator().next().getNodeStatus().equals(NodeStatus.FAILED));
+  }
+
+  @Test
+  public void testHDFSAction() throws Exception {
+
+    Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
+
+    fileSystem.mkdirs(new Path("source"));
+    fileSystem.createNewFile(new Path("source/test.txt"));
+    fileSystem.createNewFile(new Path("source/test.json"));
+
+    ETLStage action = new ETLStage(
+      "HDFSFileMoveAction",
+      new ETLPlugin("HDFSFileMoveAction", Action.PLUGIN_TYPE,
+                    ImmutableMap.of("sourcePath", outputDir.toUri().toString() + "/source",
+                                    "destPath", outputDir.toUri().toString() + "/",
+                                    "fileRegex", ".*\\.txt",
+                                    "continueOnError", "false"),
+                    null));
+    ETLStage source = new ETLStage("source",
+                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
+                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
+    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
+                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addStage(action)
+      .addConnection(action.getName(), source.getName())
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsActionTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    manager.start(ImmutableMap.of("logical.start.time", "0"));
+    manager.waitForFinish(3, TimeUnit.MINUTES);
+
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/test.txt")));
+    Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/test.json")));
   }
 }
