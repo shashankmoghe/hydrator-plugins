@@ -125,7 +125,7 @@ public class HDFSFileMoveAction extends Action {
    */
   public class HDFSActionConfig extends PluginConfig {
     @Description("Full HDFS path of file/directory. In the case of a directory, if fileRegex is set, " +
-      "then all files in the directory matching the wildcard regex will be moved. Otherwise, all files in the " +
+      "then only files in the directory matching the wildcard regex will be moved. Otherwise, all files in the " +
       "directory will be moved. Ex: hdfs://hostname/tmp")
     private String sourcePath;
 
@@ -135,11 +135,11 @@ public class HDFSFileMoveAction extends Action {
       "location should be passed and that directory and all parent directories should already exist.")
     private String destPath;
 
-    @Description("Wildcard regex to filter type of files in the directory to move")
+    @Description("Wildcard regular expression to filter the files in the directory that will be moved")
     @Nullable
     private String fileRegex;
 
-    @Description("Whether or not the Pipeline should stop if the file move process fails")
+    @Description("Whether or not the pipeline should stop if the move process fails")
     private boolean continueOnError;
 
     @VisibleForTesting
