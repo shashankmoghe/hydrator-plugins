@@ -23,7 +23,7 @@
         },
         {
           "widget-type": "select",
-          "label": "Stop Pipeline Upon Error",
+          "label": "Continue Pipeline Upon Error",
           "name": "continueOnError",
           "widget-attributes": {
             "values": [

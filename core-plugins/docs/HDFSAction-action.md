@@ -32,22 +32,22 @@ Example
 -------
 This example moves a file from /source/path to /dest/path:
 
-    {
-      "name": "HDFSAction",
-        "plugin": {
-          "name": "HDFSAction",
-          "type": "action",
-          "label": "HDFSAction",
-          "artifact": {
+{
+    "name": "HDFSAction",
+    "plugin": {
+        "name": "HDFSAction",
+        "type": "action",
+        "label": "HDFSAction",
+        "artifact": {
             "name": "core-plugins",
             "version": "1.4.0-SNAPSHOT",
             "scope": "SYSTEM"
-          },
-          "properties": {
-                    "sourcePath": "hdfs://123.23.12.4344:10000/source/path",
-                    "destPath": "hdfs://123.23.12.4344:10000/dest/path",
-                    "fileRegex": ".*\.txt",
-                    "continueOnError": "false"
-                  }
+        },
+        "properties": {
+            "sourcePath": "hdfs://123.23.12.4344:10000/source/path",
+            "destPath": "hdfs://123.23.12.4344:10000/dest/path",
+            "fileRegex": ".*\.txt",
+            "continueOnError": "false"
         }
     }
+}

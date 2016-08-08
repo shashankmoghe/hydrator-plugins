@@ -37,9 +37,9 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -59,7 +59,7 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
   private MiniDFSCluster dfsCluster;
   private FileSystem fileSystem;
 
-  @Before
+  @BeforeClass
   public void beforeTest() throws Exception {
     // Setup MiniDFSCluster
     File baseDir = folder.newFolder();
@@ -71,12 +71,10 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     fileSystem = FileSystem.get(conf);
   }
 
-  @After
+  @AfterClass
   public void afterTest() throws Exception {
     // Shutdown MiniDFSCluster
-    if (dfsCluster != null) {
-      dfsCluster.shutdown();
-    }
+    dfsCluster.shutdown();
     folder.delete();
   }
 
