@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Transformation that parses a field as CSV Record into {@link StructuredRecord}.
@@ -114,8 +115,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
           "Field " + config.field + " is not present in the input schema");
       } else {
         if (!inputSchemaField.getSchema().getType().equals(Schema.Type.STRING) &&
-            !(inputSchemaField.getSchema().isNullable() &&
-              inputSchemaField.getSchema().getNonNullable().getType().equals(Schema.Type.STRING))) {
+          !(inputSchemaField.getSchema().isNullable() &&
+            inputSchemaField.getSchema().getNonNullable().getType().equals(Schema.Type.STRING))) {
           throw new IllegalArgumentException(
             "Type for field  " + config.field + " must be String");
         }
@@ -196,30 +197,37 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
     // Field has to string to be parsed correctly. For others throw an exception.
     String body = in.get(config.field);
-    boolean nulledInput = body == null;
 
     // Parse the text as CSV and emit it as structured record.
     try {
-      org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(nulledInput ? "" : body,
-                                                                                       csvFormat);
-      List<CSVRecord> records = parser.getRecords();
-      for (CSVRecord record : records) {
-        emitter.emit(createStructuredRecord(record, in));
+      if (body == null) {
+        emitter.emit(createStructuredRecord(null, in));
+      } else {
+        org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
+        List<CSVRecord> records = parser.getRecords();
+        for (CSVRecord record : records) {
+          emitter.emit(createStructuredRecord(record, in));
+        }
       }
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
   }
 
-  private StructuredRecord createStructuredRecord(CSVRecord record, StructuredRecord in) {
+  private StructuredRecord createStructuredRecord(@Nullable CSVRecord record, StructuredRecord in) {
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
     int i = 0;
     for (Field field : fields) {
       String name = field.getName();
       // If the field specified in the output field is present in the input, then
       // it's directly copied into the output, else field is parsed in from the CSV parser.
+      // If the input record is null, propagate all supplied input fields and null other fields
+      // assumed to be CSV-parsed fields
       if (in.get(name) != null) {
         builder.set(name, in.get(name));
+      } else if (record == null){
+        builder.set(name, null);
+        continue;
       }
 
       String val = record.get(i);
@@ -258,7 +266,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
     @Name("field")
     @Description("Specify the field that should be used for parsing into CSV. Input records with a null field are " +
-     "filtered from output.")
+      "filtered from output.")
     private final String field;
 
     @Name("schema")
