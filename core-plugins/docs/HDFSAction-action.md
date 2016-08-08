@@ -14,18 +14,18 @@ often required when archiving files.
 
 Properties
 ----------
-**sourcePath:** The full HDFS path of the file/directory that the user wants to move. In the case of a directory,
-if fileRegex is set, then all files in the directory matching the wildcard regex will be moved. Otherwise,
-all files in the directory will be moved. Ex: hdfs://hostname/tmp
+**sourcePath:** The full HDFS path of the file or directory that is to be moved. In the case of a directory, if
+fileRegex is set, then only files in the source directory matching the wildcard regex will be moved.
+Otherwise, all files in the directory will be moved. For example: `hdfs://hostname/tmp`.
 
-**destPath:** The full HDFS destination path in the same cluster where the user wants to move the file(s) specified
-in the sourcePath. It is assumed that the path is valid. For moving a file, this means that the parent directories
-exist. For moving multiple files in a directory or an entire directory, the path to the desired directory location
-should be passed and that directory and all parent directories should already exist.
+**destPath:** The valid, full HDFS destination path in the same cluster where the file or files are to be moved.
+For moving a single file, this means that all parent directories must already exist.For moving multiple files in a
+directory or an entire directory, the path to the desired directory is passed and that directory and all parent
+directories must already exist.
 
-**fileRegex:** The wildcard regex to filter what kind of files in the directory to move.
+**fileRegex:** Wildcard regular expression to filter the files in the source directory that will be moved.
 
-**continueOnError:** Indicates whether or not the pipeline should stop if the file move process fails.
+**continueOnError:** Indicates if the pipeline should continue if the move process fails.
 
 
 Example
@@ -43,11 +43,11 @@ This example moves a file from /source/path to /dest/path:
             "version": "1.4.0-SNAPSHOT",
             "scope": "SYSTEM"
           },
-        },
-        "properties": {
-          "sourcePath": "hdfs://123.23.12.4344:10000/source/path",
-          "destPath": "hdfs://123.23.12.4344:10000/dest/path",
-          "fileRegex": ".*\.txt",
-          "continueOnError": "false"
+          "properties": {
+                    "sourcePath": "hdfs://123.23.12.4344:10000/source/path",
+                    "destPath": "hdfs://123.23.12.4344:10000/dest/path",
+                    "fileRegex": ".*\.txt",
+                    "continueOnError": "false"
+                  }
         }
     }

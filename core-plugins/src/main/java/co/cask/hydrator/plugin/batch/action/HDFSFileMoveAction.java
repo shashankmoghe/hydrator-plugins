@@ -77,7 +77,7 @@ public class HDFSFileMoveAction extends Action {
       return;
     }
 
-    //moving contents of directory
+    // Moving contents of directory
     FileStatus[] listFiles;
     if (config.fileRegex != null) {
       PathFilter filter = new PathFilter() {
@@ -124,22 +124,22 @@ public class HDFSFileMoveAction extends Action {
    * Config class that contains all properties necessary to execute an HDFS move command.
    */
   public class HDFSActionConfig extends PluginConfig {
-    @Description("Full HDFS path of file/directory. In the case of a directory, if fileRegex is set, " +
-      "then only files in the directory matching the wildcard regex will be moved. Otherwise, all files in the " +
-      "directory will be moved. Ex: hdfs://hostname/tmp")
+    @Description("The full HDFS path of the file or directory that is to be moved. In the case of a directory, if" +
+      "fileRegex is set, then only files in the source directory matching the wildcard regex will be moved." +
+      "Otherwise, all files in the directory will be moved. For example: hdfs://hostname/tmp")
     private String sourcePath;
 
-    @Description("The full HDFS destination path in the same cluster where user wants to move the file(s) in " +
-      "sourcePath. It is assumed that the path is valid. For moving a file, this means that the parent directories " +
-      "exist. For moving multiple files in a directory or an entire directory, the path to the desired directory " +
-      "location should be passed and that directory and all parent directories should already exist.")
+    @Description("The valid, full HDFS destination path in the same cluster where the file or files are to be moved." +
+      "For moving a single file, this means that all parent directories must already exist.For moving multiple files" +
+      " in a directory or an entire directory, the path to the desired directory is passed and that directory and " +
+      "all parent directories must already exist")
     private String destPath;
 
-    @Description("Wildcard regular expression to filter the files in the directory that will be moved")
+    @Description("Wildcard regular expression to filter the files in the source directory that will be moved")
     @Nullable
     private String fileRegex;
 
-    @Description("Whether or not the pipeline should stop if the move process fails")
+    @Description("Indicates if the pipeline should continue if the move process fails")
     private boolean continueOnError;
 
     @VisibleForTesting
