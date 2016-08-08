@@ -3,13 +3,13 @@
 
 Description
 -----------
-Moves file(s) within HDFS.
+Moves a file or files within an HDFS cluster.
 
 
 Use Case
 --------
-This action can be used when files needs to be moved to a new location in HDFS for the purpose of archiving,
-for example.
+This action can be used when a file or files need to be moved to a new location in an HDFS cluster, 
+often required when archiving files.
 
 
 Properties
