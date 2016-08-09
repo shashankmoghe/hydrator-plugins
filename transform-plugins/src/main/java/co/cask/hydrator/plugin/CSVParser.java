@@ -109,17 +109,19 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
   void validateInputSchema(Schema inputSchema) {
     if (inputSchema != null) {
+      // Check the existence of field in input schema
       Schema.Field inputSchemaField = inputSchema.getField(config.field);
       if (inputSchemaField == null) {
         throw new IllegalArgumentException(
           "Field " + config.field + " is not present in the input schema");
-      } else {
-        if (!inputSchemaField.getSchema().getType().equals(Schema.Type.STRING) &&
-          !(inputSchemaField.getSchema().isNullable() &&
-            inputSchemaField.getSchema().getNonNullable().getType().equals(Schema.Type.STRING))) {
-          throw new IllegalArgumentException(
-            "Type for field  " + config.field + " must be String");
-        }
+      }
+
+      // Check that the field type is String or Nullable String
+      Schema fieldSchema = inputSchemaField.getSchema();
+      Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+      if (!fieldType.equals(Schema.Type.STRING)) {
+        throw new IllegalArgumentException(
+          "Type for field  " + config.field + " must be String");
       }
     }
   }
