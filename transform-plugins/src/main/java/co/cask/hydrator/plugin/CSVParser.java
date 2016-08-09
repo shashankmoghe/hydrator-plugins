@@ -229,29 +229,28 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         builder.set(name, in.get(name));
       } else if (record == null){
         builder.set(name, null);
-        continue;
-      }
-
-      String val = record.get(i);
-      Schema fieldSchema = field.getSchema();
-
-      if (val.isEmpty()) {
-        boolean isNullable = fieldSchema.isNullable();
-        Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-        // if the field is a string or a nullable string, set the value to the empty string
-        if (fieldType == Schema.Type.STRING) {
-          builder.set(field.getName(), "");
-        } else if (!isNullable) {
-          // otherwise, error out
-          throw new IllegalArgumentException(String.format(
-            "Field #%d (named '%s') is of non-nullable type '%s', " +
-              "but was parsed as an empty string for CSV record '%s'",
-            i, field.getName(), field.getSchema().getType(), record));
-        }
       } else {
-        builder.convertAndSet(field.getName(), val);
+        String val = record.get(i);
+        Schema fieldSchema = field.getSchema();
+
+        if (val.isEmpty()) {
+          boolean isNullable = fieldSchema.isNullable();
+          Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+          // if the field is a string or a nullable string, set the value to the empty string
+          if (fieldType == Schema.Type.STRING) {
+            builder.set(field.getName(), "");
+          } else if (!isNullable) {
+            // otherwise, error out
+            throw new IllegalArgumentException(String.format(
+              "Field #%d (named '%s') is of non-nullable type '%s', " +
+                "but was parsed as an empty string for CSV record '%s'",
+              i, field.getName(), field.getSchema().getType(), record));
+          }
+        } else {
+          builder.convertAndSet(field.getName(), val);
+        }
+        ++i;
       }
-      ++i;
     }
     return builder.build();
   }
