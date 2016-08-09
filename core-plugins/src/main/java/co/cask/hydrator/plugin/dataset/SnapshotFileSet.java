@@ -49,9 +49,6 @@ import javax.annotation.Nullable;
  *       it should also implement DatasetOutputCommitter.
  */
 public class SnapshotFileSet {
-  // the fixed partitioning that time maps to
-  private static final String FIELD_MILLISECOND = "millisecond";
-
   private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
   private static final Gson GSON = new Gson();
   private static final String STATE_FILE_NAME = "state";
@@ -144,7 +141,7 @@ public class SnapshotFileSet {
 
   public void deleteMatchingPartitionsByTime(long upperLimit) throws IOException {
     if (upperLimit > 0 && upperLimit < Long.MAX_VALUE) {
-      PartitionFilter filter = PartitionFilter.builder().addRangeCondition(FIELD_MILLISECOND, null, upperLimit).build();
+      PartitionFilter filter = PartitionFilter.builder().addRangeCondition("millisecond", null, upperLimit).build();
       Set<PartitionDetail> partitions = files.getPartitions(filter);
       for (PartitionDetail partition : partitions) {
         files.dropPartition(partition.getPartitionKey());
