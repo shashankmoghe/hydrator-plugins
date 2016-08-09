@@ -57,7 +57,7 @@ public class SnapshotFileSet {
   private static final String STATE_FILE_NAME = "state";
   private final PartitionedFileSet files;
 
-  public static final Partitioning PARTITIONING = Partitioning.builder()
+  private static final Partitioning PARTITIONING = Partitioning.builder()
     .addIntField(FIELD_MILLISECOND)
     .build();
 
