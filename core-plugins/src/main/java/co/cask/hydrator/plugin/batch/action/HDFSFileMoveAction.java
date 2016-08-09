@@ -94,10 +94,23 @@ public class HDFSFileMoveAction extends Action {
       listFiles = fileSystem.listStatus(source);
     }
 
+    if (listFiles.length == 0) {
+      if (config.fileRegex != null) {
+        LOG.warn("Not moving any files of type {} from source {}", config.fileRegex, source.toString());
+      } else {
+        LOG.warn("Not moving any files from source {}", source.toString());
+      }
+    }
+
+    //Moving directory, so destination filePath doesn't have filename
+    dest = new Path(config.destPath);
+    if (!fileSystem.getFileStatus(dest).isDirectory()) {//directory path was not passed
+      throw new IllegalArgumentException(String.format("Destination path %s is not a directory even though source %s " +
+                                                         "is a directory", dest.toString(), source.toString()));
+    }
+
     for (FileStatus file: listFiles) {
       source = file.getPath();
-      //Moving directory, so destination filePath doesn't have filename
-      dest = new Path(config.destPath);
 
       try {
         if (!fileSystem.rename(source, dest)) {
