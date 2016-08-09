@@ -81,7 +81,7 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
           long cutoffTime =
             context.getLogicalStartTime() - TimeParser.parseDuration(config.getCleanPartitionsOlderThan());
           snapshotFileSet.deleteMatchingPartitionsByTime(cutoffTime);
-          LOG.info("Cleaning up old partition for timestamp {}", cutoffTime);
+          LOG.info("Cleaning up snapshots older than {}", cutoffTime);
         }
         snapshotFileSet.onSuccess(context.getLogicalStartTime());
       } catch (Exception e) {
