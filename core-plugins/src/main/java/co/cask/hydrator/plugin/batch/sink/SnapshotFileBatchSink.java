@@ -22,6 +22,7 @@ import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.TimeParser;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
 import com.google.gson.Gson;
@@ -76,6 +77,10 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
     super.onRunFinish(succeeded, context);
     if (succeeded) {
       try {
+        long cutoffTime =
+          context.getLogicalStartTime() - TimeParser.parseDuration(config.getCleanPartitionsOlderThan());
+        snapshotFileSet.deleteMatchingPartitionsByTime(cutoffTime);
+        LOG.info("Cleaning up old partition for timestamp {}", cutoffTime);
         snapshotFileSet.onSuccess(context.getLogicalStartTime());
       } catch (Exception e) {
         LOG.error("Exception updating state file with value of latest snapshot, ", e);
