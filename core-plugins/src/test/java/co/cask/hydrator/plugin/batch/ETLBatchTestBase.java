@@ -21,7 +21,6 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ArtifactId;
@@ -75,6 +74,7 @@ import org.junit.ClassRule;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
+import parquet.hadoop.ParquetReader;
 
 import java.io.IOException;
 import java.util.List;
@@ -103,7 +103,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
     setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
 
     Set<ArtifactRange> parents = ImmutableSet.of(
-      new ArtifactRange(Id.Namespace.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getArtifact(),
+      new ArtifactRange(NamespaceId.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getArtifact(),
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true,
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true)
     );
@@ -161,7 +161,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
       }
       if (locName.endsWith(".parquet")) {
         Path parquetFile = new Path(file.toString());
-        AvroParquetReader<GenericRecord> reader = new AvroParquetReader<>(parquetFile);
+        AvroParquetReader.Builder<GenericRecord> genericRecordBuilder = AvroParquetReader.builder(parquetFile);
+        ParquetReader<GenericRecord> reader = genericRecordBuilder.build();
         GenericRecord result = reader.read();
         while (result != null) {
           records.add(result);

@@ -90,10 +90,10 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     setupRealtimeArtifacts(REALTIME_ARTIFACT_ID, ETLRealtimeApplication.class);
 
     Set<ArtifactRange> parents = new HashSet<>();
-    parents.add(new ArtifactRange(Id.Namespace.DEFAULT, BATCH_ARTIFACT_ID.getArtifact(),
+    parents.add(new ArtifactRange(NamespaceId.DEFAULT, BATCH_ARTIFACT_ID.getArtifact(),
                                   new ArtifactVersion(BATCH_ARTIFACT.getVersion()), true,
                                   new ArtifactVersion(BATCH_ARTIFACT.getVersion()), true));
-    parents.add(new ArtifactRange(Id.Namespace.DEFAULT, REALTIME_ARTIFACT_ID.getArtifact(),
+    parents.add(new ArtifactRange(NamespaceId.DEFAULT, REALTIME_ARTIFACT_ID.getArtifact(),
                                   new ArtifactVersion(REALTIME_ARTIFACT.getVersion()), true,
                                   new ArtifactVersion(REALTIME_ARTIFACT.getVersion()), true));
     addPluginArtifact(NamespaceId.DEFAULT.artifact("http-plugins", "1.0.0"), parents,
@@ -103,7 +103,7 @@ public class HttpCallbackActionTest extends HydratorTestBase {
 
     List<HttpHandler> handlers = new ArrayList<>();
     handlers.add(new MockFeedHandler());
-    httpService = NettyHttpService.builder()
+    httpService = NettyHttpService.builder("MockService")
       .addHttpHandlers(handlers)
       .build();
     httpService.startAndWait();

@@ -143,7 +143,7 @@ public class ETLESTest extends HydratorTestBase {
     httpPort = Networks.getRandomPort();
     transportPort = Networks.getRandomPort();
     ImmutableSettings.Builder elasticsearchSettings = ImmutableSettings.settingsBuilder()
-      .put("path.data", tmpFolder.newFolder("data"))
+      .put("path.data", temporaryFolder.newFolder("data"))
       .put("cluster.name", "testcluster")
       .put("http.port", httpPort)
       .put("transport.tcp.port", transportPort);
