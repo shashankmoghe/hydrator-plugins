@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.etl.api.PipelineConfigurer;
@@ -77,7 +78,6 @@ public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<
                               DatasetProperties.builder().addAll(properties).build());
       }
     }
-
-    context.addOutput(properties.get(Properties.BatchReadableWritable.NAME));
+    context.addOutput(Output.ofDataset(properties.get(Properties.BatchReadableWritable.NAME)));
   }
 }
